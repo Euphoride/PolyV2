@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = __importDefault(require("express"));
 var overview_1 = require("./schema/overview/overview");
+var Pipelines_1 = __importDefault(require("./src/Pipelines"));
 var RoutingPipeline_1 = __importDefault(require("./src/RoutingPipeline"));
 var app = express_1.default();
 app.use(express_1.default.json());
@@ -24,15 +25,29 @@ app.get("/", function (req, res) {
             }
         ]
     };
-    console.log(overview_1.findInTree(["Accounts"], KVRoseTree));
-    console.log(overview_1.findInTree(["Blogs"], KVRoseTree));
-    console.log(overview_1.findInTree([], KVRoseTree));
-    var KVRoseTreeTwo = overview_1.modifyTree(["Blogs"], "SQL", KVRoseTree);
-    console.log(overview_1.findInTree(["Blogs"], KVRoseTreeTwo));
-    var KVRoseTreeThree = overview_1.modifyTree(["Blogs", "Bogs", "Logs"], "Mongo", KVRoseTreeTwo);
-    console.log(overview_1.findInTree(["Blogs", "Bogs", "Logs"], KVRoseTreeThree));
-    var KVRoseTreeFour = overview_1.deleteInTree(["Blogs", "Bogs", "Logs"], KVRoseTreeThree);
-    console.log(KVRoseTreeFour);
-    console.log(overview_1.findInTree(["Blogs", "Bogs"], KVRoseTreeFour));
+    var processedRoseTree = Pipelines_1.default(KVRoseTree)
+        .impureThen(function (rt) {
+        console.log(overview_1.findInTree(["Accounts"], rt));
+        console.log(overview_1.findInTree(["Blogs"], rt));
+        console.log(overview_1.findInTree([], rt));
+        return rt;
+    })
+        .andThen(function (rt) {
+        return overview_1.modifyTree(["Blogs", "Bogs", "Logs"], "Mongo", overview_1.modifyTree(["Blogs"], "SQL", rt));
+    })
+        .impureThen(function (rt) {
+        console.log(overview_1.findInTree(["Blogs"], rt));
+        console.log(overview_1.findInTree(["Blogs", "Bogs", "Logs"], rt));
+        return rt;
+    })
+        .andThen(function (rt) {
+        return overview_1.deleteInTree(["Blogs", "Bogs"], rt);
+    })
+        .impureThen(function (rt) {
+        console.log(overview_1.findInTree(["Blogs", "Bogs"], rt));
+        return rt;
+    })
+        .releaseState();
+    console.log(processedRoseTree);
 });
 app.listen(3000, function () { return console.log("Currently listening (God willing)!"); });

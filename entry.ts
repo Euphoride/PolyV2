@@ -1,5 +1,6 @@
 import express from 'express';
 import { modifyTree, deleteInTree, findInTree, RoseTree } from './schema/overview/overview';
+import Pipeline from './src/Pipelines';
 
 import RoutePipeline from './src/RoutingPipeline';
 
@@ -26,22 +27,35 @@ app.get("/", (req, res) => {
         ]
     };
 
+    const processedRoseTree = Pipeline(KVRoseTree)
+        .impureThen(rt => {
+            console.log(findInTree(["Accounts"], rt));
+            console.log(findInTree(["Blogs"], rt));
+            console.log(findInTree([], rt));
+            return rt;
+        })
+        .andThen(rt => {
+            return modifyTree(["Blogs", "Bogs", "Logs"], "Mongo", 
+                modifyTree(["Blogs"], "SQL", rt)
+            );
+        })
+        .impureThen(rt => {
+            console.log(findInTree(["Blogs"], rt));
+            console.log(findInTree(["Blogs", "Bogs", "Logs"], rt));
+            return rt;
+        })
+        .andThen(rt => {
+            return deleteInTree(["Blogs", "Bogs"], rt);
+        })
+        .impureThen(rt => {
+            console.log(findInTree(["Blogs", "Bogs"], rt));
+            return rt;
+        })
+        .releaseState();
 
-    console.log(findInTree(["Accounts"], KVRoseTree));
-    console.log(findInTree(["Blogs"], KVRoseTree));
-    console.log(findInTree([], KVRoseTree));
 
-    const KVRoseTreeTwo = modifyTree(["Blogs"], "SQL", KVRoseTree);
-    console.log(findInTree(["Blogs"], KVRoseTreeTwo));
-
-    const KVRoseTreeThree = modifyTree(["Blogs", "Bogs", "Logs"], "Mongo", KVRoseTreeTwo);
-    console.log(findInTree(["Blogs", "Bogs", "Logs"], KVRoseTreeThree));
-
-
-    const KVRoseTreeFour = deleteInTree(["Blogs", "Bogs"], KVRoseTreeThree);
-    console.log(KVRoseTreeFour);
+    console.log(processedRoseTree);
     
-    console.log(findInTree(["Blogs", "Bogs"], KVRoseTreeFour));
 });
 
 app.listen(3000, () => console.log("Currently listening (God willing)!"));
