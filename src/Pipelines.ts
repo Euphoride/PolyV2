@@ -1,15 +1,16 @@
-import { Maybe, Nothing, asMaybe } from '../types/CommonTypes';
+import { Maybe, Nothing } from '../types/CommonTypes';
 
 type PipelineTransformation<PreStateType, PostStateType> = (argument: PreStateType) => Maybe<PostStateType>;
 
 type PipelineStage<PreStateType> = {
     newState: <NewStateType, PostStateType,>(state: Maybe<NewStateType>, callback: PipelineTransformation<NewStateType, PostStateType>) => PipelineStage<PostStateType>,
     andThen:  <PostStateType,>(callback: PipelineTransformation<PreStateType, PostStateType>) => PipelineStage<PostStateType>,
-    impureThen: <PostStateType,>(callback: PipelineTransformation<PreStateType, PostStateType>) => PipelineStage<PostStateType>
+    impureThen: <PostStateType,>(callback: PipelineTransformation<PreStateType, PostStateType>) => PipelineStage<PostStateType>,
+    releaseState: () => Maybe<PreStateType>
 };
 
 
-function Pipeline<StartType>(startState: StartType, strictMode : boolean = true): PipelineStage<StartType> {
+export default function Pipeline<StartType>(startState: StartType, strictMode : boolean = true): PipelineStage<StartType> {
 
     // Executor should kinda be like a class written in functional form
     const executor = <PreStateType,>(preState: Maybe<PreStateType>) => {
@@ -52,13 +53,18 @@ function Pipeline<StartType>(startState: StartType, strictMode : boolean = true)
             return impureThen(callback);
         }; 
 
+        const releaseState = () => {
+            return preState;
+        }
+
 
         return {
             newState, 
             andThen,
-            impureThen
+            impureThen,
+            releaseState
         };
     };
 
-    return executor<StartType>(asMaybe(startState));
+    return executor<StartType>(startState);
 }

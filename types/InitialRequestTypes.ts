@@ -1,14 +1,22 @@
-type Cookies = {
+import { JSONObject } from "./CommonTypes";
+
+export type Cookies = {
     [index: string]: string
 };
 
-type HTTPHeaders = {
+export type HTTPHeaders = {
     [index: string] : string
 };
 
-type InitialRequest = {
-    Verb : "GET" | "POST" | "DELETE", 
+export type HTTPMethod = "GET" | "POST" | "DELETE"
+
+export type InitialRequestNoCookie = {
+    Verb : HTTPMethod, 
     Headers: HTTPHeaders,
-    Cookies: Cookies,
-    Data: any
+    Path: String,
+    Data: JSONObject
+};
+
+export type InitialRequest = InitialRequestNoCookie & {
+    Cookies: Cookies
 };

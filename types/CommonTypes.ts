@@ -3,6 +3,11 @@ const Nothing = Symbol("Nothing");
 type Nothing  = typeof Nothing;
 type Maybe<T> = T | Nothing;
 
-const asMaybe = <T,>(item: T): Maybe<T> => item;
+type JSONObject =
+    | string
+    | number
+    | boolean
+    | { [x: string]: JSONObject }
+    | Array<JSONObject>;
 
-export { Maybe, Nothing, asMaybe };
+export { Maybe, Nothing, JSONObject };
