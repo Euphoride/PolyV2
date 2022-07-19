@@ -1,0 +1,15 @@
+{
+  "name": "polyv2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "entry.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mila Sager",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^4.18.1",
+    "typescript": "^4.7.4"
+  }
+}
