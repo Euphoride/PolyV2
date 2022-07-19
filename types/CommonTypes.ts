@@ -8,6 +8,6 @@ type JSONObject =
     | number
     | boolean
     | { [x: string]: JSONObject }
-    | Array<JSONObject>;
+    | JSONObject[] ;
 
 export { Maybe, Nothing, JSONObject };

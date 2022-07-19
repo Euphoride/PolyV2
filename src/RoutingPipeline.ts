@@ -17,7 +17,7 @@ import Pipeline from './Pipelines';
 
 
 export default function RoutePipeline(req: Request) {
-    const verb = Pipeline(req)
+    const PipelineMidStage = Pipeline(req)
         .andThen<InitialRequestNoCookie>(req => {
             const method = req.method;
 
@@ -31,8 +31,21 @@ export default function RoutePipeline(req: Request) {
                 Data: req.body,
                 Path: req.path
             };
+        });
+
+    const verb = PipelineMidStage
+        .andThen<HTTPMethod>(ir => {
+            return ir.Verb;
+        })
+        .releaseState();
+
+    
+    const headers = PipelineMidStage
+        .andThen<HTTPHeaders>(ir => {
+            return ir.Headers
         })
         .releaseState();
 
     console.log(verb);
+    console.log(headers);
 }

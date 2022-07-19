@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var CommonTypes_1 = require("../types/CommonTypes");
 var Pipelines_1 = __importDefault(require("./Pipelines"));
 function RoutePipeline(req) {
-    var verb = Pipelines_1.default(req)
+    var PipelineMidStage = Pipelines_1.default(req)
         .andThen(function (req) {
         var method = req.method;
         if (!["GET", "POST", "DELETE"].includes(method)) {
@@ -18,8 +18,18 @@ function RoutePipeline(req) {
             Data: req.body,
             Path: req.path
         };
+    });
+    var verb = PipelineMidStage
+        .andThen(function (ir) {
+        return ir.Verb;
+    })
+        .releaseState();
+    var headers = PipelineMidStage
+        .andThen(function (ir) {
+        return ir.Headers;
     })
         .releaseState();
     console.log(verb);
+    console.log(headers);
 }
 exports.default = RoutePipeline;
