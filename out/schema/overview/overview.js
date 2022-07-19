@@ -28,7 +28,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * that child from the children[] array of the parent node.
  *
  */
-var findKV = function (key, overview) {
+var findInTree = function (key, overview) {
     if (key.length === 0 || overview.kind == "Leaf") {
         return overview.value;
     }
@@ -37,11 +37,11 @@ var findKV = function (key, overview) {
         return overview.value;
     }
     var _ = key[0], newKey = key.slice(1);
-    var mostSpecificChildValue = findKV(newKey, mostSpecificChild);
+    var mostSpecificChildValue = findInTree(newKey, mostSpecificChild);
     return mostSpecificChildValue;
 };
-exports.findKV = findKV;
-var addKV = function (key, value, overview) {
+exports.findInTree = findInTree;
+var modifyTree = function (key, value, overview) {
     if (key.length === 0 && overview.kind === "Leaf") {
         return __assign(__assign({}, overview), { value: value });
     }
@@ -54,17 +54,17 @@ var addKV = function (key, value, overview) {
         return __assign(__assign({}, overview), { children: overview.children.concat([newChild]) });
     }
     var _ = key[0], newKey = key.slice(1);
-    var newChildren = overview.children.map(function (child) { return (child.key === key[0]) ? addKV(newKey, value, child) : child; });
+    var newChildren = overview.children.map(function (child) { return (child.key === key[0]) ? modifyTree(newKey, value, child) : child; });
     return __assign(__assign({}, overview), { children: newChildren });
 };
-exports.addKV = addKV;
-var delKV = function (key, overview) {
+exports.modifyTree = modifyTree;
+var deleteInTree = function (key, overview) {
     if (overview.kind === "Leaf") {
         return overview;
     }
     var _ = key[0], newKey = key.slice(1);
     var filteredChildren = overview.children.filter(function (child) { return !(key.length === 1 && key[0] === child.key); });
-    var newChildren = filteredChildren.map(function (child) { return delKV(newKey, child); });
+    var newChildren = filteredChildren.map(function (child) { return deleteInTree(newKey, child); });
     if (newChildren.length !== 0) {
         return __assign(__assign({}, overview), { children: newChildren });
     }
@@ -76,7 +76,7 @@ var delKV = function (key, overview) {
         };
     }
 };
-exports.delKV = delKV;
+exports.deleteInTree = deleteInTree;
 function buildNewChild(key, value) {
     var templateNewChild = {
         kind: "Leaf",
@@ -84,6 +84,6 @@ function buildNewChild(key, value) {
         value: value
     };
     var _ = key[0], newKey = key.slice(1);
-    var newChild = addKV(newKey, value, templateNewChild);
+    var newChild = modifyTree(newKey, value, templateNewChild);
     return newChild;
 }

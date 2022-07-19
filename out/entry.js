@@ -24,15 +24,15 @@ app.get("/", function (req, res) {
             }
         ]
     };
-    console.log(overview_1.findKV(["Accounts"], KVRoseTree));
-    console.log(overview_1.findKV(["Blogs"], KVRoseTree));
-    console.log(overview_1.findKV([], KVRoseTree));
-    var KVRoseTreeTwo = overview_1.addKV(["Blogs"], "SQL", KVRoseTree);
-    console.log(overview_1.findKV(["Blogs"], KVRoseTreeTwo));
-    var KVRoseTreeThree = overview_1.addKV(["Blogs", "Bogs", "Logs"], "Mongo", KVRoseTreeTwo);
-    console.log(overview_1.findKV(["Blogs", "Bogs", "Logs"], KVRoseTreeThree));
-    var KVRoseTreeFour = overview_1.delKV(["Blogs", "Bogs"], KVRoseTreeThree);
+    console.log(overview_1.findInTree(["Accounts"], KVRoseTree));
+    console.log(overview_1.findInTree(["Blogs"], KVRoseTree));
+    console.log(overview_1.findInTree([], KVRoseTree));
+    var KVRoseTreeTwo = overview_1.modifyTree(["Blogs"], "SQL", KVRoseTree);
+    console.log(overview_1.findInTree(["Blogs"], KVRoseTreeTwo));
+    var KVRoseTreeThree = overview_1.modifyTree(["Blogs", "Bogs", "Logs"], "Mongo", KVRoseTreeTwo);
+    console.log(overview_1.findInTree(["Blogs", "Bogs", "Logs"], KVRoseTreeThree));
+    var KVRoseTreeFour = overview_1.deleteInTree(["Blogs", "Bogs", "Logs"], KVRoseTreeThree);
     console.log(KVRoseTreeFour);
-    console.log(overview_1.findKV(["Blogs", "Bogs"], KVRoseTreeFour));
+    console.log(overview_1.findInTree(["Blogs", "Bogs"], KVRoseTreeFour));
 });
 app.listen(3000, function () { return console.log("Currently listening (God willing)!"); });
