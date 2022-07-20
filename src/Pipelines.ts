@@ -1,70 +1,61 @@
 import { Maybe, Nothing } from '../types/CommonTypes';
+import { StateTransformer } from '../types/PipelineTypes';
 
-type PipelineTransformation<PreStateType, PostStateType> = (argument: PreStateType) => Maybe<PostStateType>;
+import { bind } from './Maybe';
 
-type PipelineStage<PreStateType> = {
-    newState: <NewStateType, PostStateType,>(state: Maybe<NewStateType>, callback: PipelineTransformation<NewStateType, PostStateType>) => PipelineStage<PostStateType>,
-    andThen:  <PostStateType,>(callback: PipelineTransformation<PreStateType, PostStateType>) => PipelineStage<PostStateType>,
-    impureThen: <PostStateType,>(callback: PipelineTransformation<PreStateType, PostStateType>) => PipelineStage<PostStateType>,
-    releaseState: () => Maybe<PreStateType>
+type PipelineStage<A> = {
+    andThen:  <B>(callback: StateTransformer<A, B>) => PipelineStage<B>,
+    impureThen: <B>(callback: StateTransformer<A, B>) => PipelineStage<B>,
+    releaseState: () => Maybe<A>
 };
 
 
-export default function Pipeline<StartType>(startState: StartType, strictMode : boolean = true): PipelineStage<StartType> {
+export default function Pipeline<S>(startState: S, strictMode : boolean = true): PipelineStage<S> {
 
     // Executor should kinda be like a class written in functional form
-    const executor = <PreStateType,>(preState: Maybe<PreStateType>) => {
-        
-        // A monadic bind with a rough signature of "Maybe a -> (a -> Maybe b) -> Maybe b"
-        const bind = <InitialStateType, PostStateType,>(input: Maybe<InitialStateType>, transformer: PipelineTransformation<InitialStateType, PostStateType>) => {
-            switch (input) {
-                case Nothing:
-                    return Nothing;
-                default:
-                    return transformer(input);
-            };
-        };
-
-        // If strict mode is on, we should trigger the callback twice to detect potentially unwanted side-effects
-        // in the callback function. 
-        const purityTest = <InitialStateType, PostStateType,>(state: Maybe<InitialStateType>, callback: PipelineTransformation<InitialStateType, PostStateType>) => {
-            if (strictMode) bind(state, callback);
+    const chainball = <A,>(preState: Maybe<A>) => {
+        const transformState = <I, B>(state: Maybe<I>, transform: StateTransformer<I, B>): Maybe<B> => {
+            return bind(state)(transform);
         }
 
-        // Should replace the old state inside the pipeline with new state. Probably doesn't have very many 
-        // sensible uses but here it is, God willing.
-        const newState = <NewStateType, PostStateType,>(state: Maybe<NewStateType>, callback: PipelineTransformation<NewStateType, PostStateType>) => {
-            purityTest(state, callback);
+        const nextChain = <B>(state: Maybe<B>): PipelineStage<B> => {
+            return chainball(state);
+        }
 
-            return executor(bind(state, callback));
-        };
+        const nextStage = <I, B>(state: Maybe<I>, transform: StateTransformer<I, B>): PipelineStage<B> => {
+            return chainball(transformState(state, transform));
+        }
+
+        const testPure = (pureFn: <B>(transform: StateTransformer<A, B>) => PipelineStage<B>) => {
+            return <B>(transform: StateTransformer<A, B>): PipelineStage<B> => {
+                if (strictMode) pureFn(transform);
+
+                return pureFn(transform);
+            }
+        }
 
         // This should be an explict way to add impurities into the pipeline and it should
         // circumvent strict mode's attempt at double execution to try and detect side-effects
-        const impureThen = <PostStateType,>(callback: PipelineTransformation<PreStateType, PostStateType>) => {
-            return executor(bind(preState, callback));
+        const impureThen = <B>(transform: StateTransformer<A, B>): PipelineStage<B> => {
+            return nextStage(preState, transform);
         }; 
         
         // Should be a pure version of .impureThen(). It should try to use
         // the purity test to attempt double executiona nd try to detect side-effects
-        const andThen = <PostStateType,>(callback: PipelineTransformation<PreStateType, PostStateType>) => {
-            purityTest(preState, callback);
+        const andThen = testPure(impureThen);
 
-            return impureThen(callback);
-        }; 
-
+        
         const releaseState = () => {
             return preState;
         }
 
 
         return {
-            newState, 
             andThen,
             impureThen,
             releaseState
         };
     };
 
-    return executor<StartType>(startState);
+    return chainball<S>(startState);
 }
