@@ -53,7 +53,7 @@ console.log(KVRoseTree)
     console.log(processedRoseTree);
 */
 
-const uri = "mongodb+srv://MongoUser:MongoUserHouseCat@playground.rjsvz.mongodb.net/?retryWrites=true&w=majority";
+const uri = "";
 const options: MongoClientOptions = { serverApi: ServerApiVersion.v1 };
 
 
