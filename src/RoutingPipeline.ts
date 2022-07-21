@@ -1,6 +1,7 @@
 import {
     Request
 } from 'express';
+import { MongoClient } from 'mongodb';
 
 import { JSONObject, Nothing } from '../types/CommonTypes';
 
@@ -12,12 +13,12 @@ import {
     InitialRequest
 } from '../types/InitialRequestTypes';
 
-import Pipeline from './Pipelines';
+import { LazyPipeline, Pipeline } from './Pipelines';
 
 
 
-export default function RoutePipeline(req: Request) {
-    const PipelineMidStage = Pipeline(req)
+export default function RoutePipeline(req: Request, client: MongoClient) {    
+    const PipelineMidStage = LazyPipeline<Request>()
         .andThen<InitialRequestNoCookie>(req => {
             const method = req.method;
 
@@ -31,21 +32,28 @@ export default function RoutePipeline(req: Request) {
                 Data: req.body,
                 Path: req.path
             };
-        });
-
-    const verb = PipelineMidStage
-        .andThen<HTTPMethod>(ir => {
-            return ir.Verb;
         })
+        .andThen(irnc => irnc.Verb);
+
+    const lazyVerb = PipelineMidStage.feed(req);
+
+    const verb = Pipeline(req)
+        .andThen<InitialRequestNoCookie>(req => {
+            const method = req.method;
+
+            if (!["GET", "POST", "DELETE"].includes(method)) {
+                return Nothing;
+            }
+
+            return <InitialRequestNoCookie>{
+                Verb: method,
+                Headers: req.headers,
+                Data: req.body,
+                Path: req.path
+            };
+        })
+        .andThen(irnc => irnc.Verb)
         .releaseState();
 
-    
-    const headers = PipelineMidStage
-        .andThen<HTTPHeaders>(ir => {
-            return ir.Headers
-        })
-        .releaseState();
-
-    console.log(verb);
-    console.log(headers);
+    console.log(lazyVerb === verb);
 }

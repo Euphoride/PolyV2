@@ -1,53 +1,72 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var CommonTypes_1 = require("../types/CommonTypes");
+exports.Pipeline = exports.LazyPipeline = void 0;
+var Maybe_1 = require("./Maybe");
+function LazyPipeline(strictMode) {
+    if (strictMode === void 0) { strictMode = true; }
+    return LazyPipeline_(function (x) { return x; });
+}
+exports.LazyPipeline = LazyPipeline;
+function LazyPipeline_(startState, strictMode) {
+    if (strictMode === void 0) { strictMode = true; }
+    var nextComposition = function (pState, nTransform) {
+        return (0, Maybe_1.compose)(pState)(nTransform);
+    };
+    var testPure = function (chain) {
+        var boop = function (pureFn) {
+            if (strictMode)
+                chain(pureFn);
+            return chain(pureFn);
+        };
+        return boop;
+    };
+    var impureThen = function (transform) {
+        var comp = nextComposition(startState, transform);
+        var chain = LazyPipeline_(comp);
+        return chain;
+    };
+    var andThen = testPure(impureThen);
+    var feed = function (a) {
+        return startState(a);
+    };
+    return {
+        andThen: andThen,
+        impureThen: impureThen,
+        feed: feed
+    };
+}
 function Pipeline(startState, strictMode) {
     if (strictMode === void 0) { strictMode = true; }
-    // Executor should kinda be like a class written in functional form
-    var executor = function (preState) {
-        // A monadic bind with a rough signature of "Maybe a -> (a -> Maybe b) -> Maybe b"
-        var bind = function (input, transformer) {
-            switch (input) {
-                case CommonTypes_1.Nothing:
-                    return CommonTypes_1.Nothing;
-                default:
-                    return transformer(input);
-            }
-            ;
+    var chainball = function (preState) {
+        var transformState = function (state, transform) {
+            return (0, Maybe_1.bind)(state)(transform);
         };
-        // If strict mode is on, we should trigger the callback twice to detect potentially unwanted side-effects
-        // in the callback function. 
-        var purityTest = function (state, callback) {
-            if (strictMode)
-                bind(state, callback);
+        var nextChain = function (state) {
+            return chainball(state);
         };
-        // Should replace the old state inside the pipeline with new state. Probably doesn't have very many 
-        // sensible uses but here it is, God willing.
-        var newState = function (state, callback) {
-            purityTest(state, callback);
-            return executor(bind(state, callback));
+        var nextStage = function (state, transform) {
+            return nextChain(transformState(state, transform));
         };
-        // This should be an explict way to add impurities into the pipeline and it should
-        // circumvent strict mode's attempt at double execution to try and detect side-effects
-        var impureThen = function (callback) {
-            return executor(bind(preState, callback));
+        var testPure = function (pureFn) {
+            return function (transform) {
+                if (strictMode)
+                    pureFn(transform);
+                return pureFn(transform);
+            };
         };
-        // Should be a pure version of .impureThen(). It should try to use
-        // the purity test to attempt double executiona nd try to detect side-effects
-        var andThen = function (callback) {
-            purityTest(preState, callback);
-            return impureThen(callback);
+        var impureThen = function (transform) {
+            return nextStage(preState, transform);
         };
+        var andThen = testPure(impureThen);
         var releaseState = function () {
             return preState;
         };
         return {
-            newState: newState,
             andThen: andThen,
             impureThen: impureThen,
             releaseState: releaseState
         };
     };
-    return executor(startState);
+    return chainball(startState);
 }
-exports.default = Pipeline;
+exports.Pipeline = Pipeline;

@@ -11,6 +11,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.deleteInTree = exports.modifyTree = exports.findInTree = void 0;
 /*
  * Some notes and definitions:
  *

@@ -75,7 +75,7 @@ const deleteInTree = (key: String[], overview: RoseTree<String, String>): RoseTr
     const [_, ...newKey] = key;
 
     const filteredChildren = overview.children.filter(child => !(key.length === 1 && key[0] === child.key));
-    const newChildren = filteredChildren.map(child => deleteInTree(newKey, child));
+    const newChildren      = filteredChildren.map(child => deleteInTree(newKey, child));
 
     if (newChildren.length !== 0) {
         return {...overview, children: newChildren};
@@ -88,12 +88,6 @@ const deleteInTree = (key: String[], overview: RoseTree<String, String>): RoseTr
     }
 }
 
-export {
-    findInTree,
-    modifyTree,
-    deleteInTree,
-    RoseTree
-};
 
 function buildNewChild(key: String[], value: String) {
         const templateNewChild: RoseTree<String, String> = {
@@ -107,3 +101,11 @@ function buildNewChild(key: String[], value: String) {
         const newChild = modifyTree(newKey, value, templateNewChild);
         return newChild;
     }
+
+export {
+    findInTree,
+    modifyTree,
+    deleteInTree,
+    RoseTree
+};
+    

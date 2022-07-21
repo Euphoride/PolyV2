@@ -1,7 +1,57 @@
 import { Maybe, Nothing } from '../types/CommonTypes';
 import { StateTransformer } from '../types/PipelineTypes';
 
-import { bind } from './Maybe';
+import { bind, compose } from './Maybe';
+
+
+type LazyPipelineStage<A, B> = {
+    andThen:  <C>(callback: StateTransformer<B, C>) => LazyPipelineStage<A, C>,
+    impureThen: <C>(callback: StateTransformer<B, C>) => LazyPipelineStage<A, C>,
+    feed: (a: A) => Maybe<B>
+};
+
+
+export function LazyPipeline<A>(strictMode : boolean = true): LazyPipelineStage<A, A> {
+    return LazyPipeline_<A, A>(x => x);
+}
+
+
+function LazyPipeline_<A, B>(startState: StateTransformer<A, B>, strictMode : boolean = true): LazyPipelineStage<A, B> {
+    const nextComposition = <C>(pState: StateTransformer<A, B>, nTransform: StateTransformer<B, C>) => {
+        return compose(pState)(nTransform);
+    }
+
+    const testPure = <C>(chain: (transform: StateTransformer<B, C>) => LazyPipelineStage<A, C>) => {
+        const boop = (pureFn: StateTransformer<B, C>): LazyPipelineStage<A, C> => {
+            if (strictMode) chain(pureFn);
+
+            return chain(pureFn);
+        }
+
+        return boop;
+    }
+
+    const impureThen = <C>(transform: StateTransformer<B, C>): LazyPipelineStage<A, C> => {
+        const comp = nextComposition<C>(startState, transform);
+        const chain = LazyPipeline_<A, C>(comp);
+
+        return chain;
+    }; 
+    
+    const andThen = testPure(impureThen);
+
+    const feed = (a: A): Maybe<B> => {
+        return startState(a);
+    }
+
+
+    return {
+        andThen,
+        impureThen,
+        feed
+    };
+}
+
 
 type PipelineStage<A> = {
     andThen:  <B>(callback: StateTransformer<A, B>) => PipelineStage<B>,
@@ -10,9 +60,8 @@ type PipelineStage<A> = {
 };
 
 
-export default function Pipeline<S>(startState: S, strictMode : boolean = true): PipelineStage<S> {
+export function Pipeline<S>(startState: S, strictMode : boolean = true): PipelineStage<S> {
 
-    // Executor should kinda be like a class written in functional form
     const chainball = <A,>(preState: Maybe<A>) => {
         const transformState = <I, B>(state: Maybe<I>, transform: StateTransformer<I, B>): Maybe<B> => {
             return bind(state)(transform);
@@ -23,7 +72,7 @@ export default function Pipeline<S>(startState: S, strictMode : boolean = true):
         }
 
         const nextStage = <I, B>(state: Maybe<I>, transform: StateTransformer<I, B>): PipelineStage<B> => {
-            return chainball(transformState(state, transform));
+            return nextChain(transformState(state, transform));
         }
 
         const testPure = (pureFn: <B>(transform: StateTransformer<A, B>) => PipelineStage<B>) => {
@@ -34,14 +83,10 @@ export default function Pipeline<S>(startState: S, strictMode : boolean = true):
             }
         }
 
-        // This should be an explict way to add impurities into the pipeline and it should
-        // circumvent strict mode's attempt at double execution to try and detect side-effects
         const impureThen = <B>(transform: StateTransformer<A, B>): PipelineStage<B> => {
             return nextStage(preState, transform);
         }; 
         
-        // Should be a pure version of .impureThen(). It should try to use
-        // the purity test to attempt double executiona nd try to detect side-effects
         const andThen = testPure(impureThen);
 
         
