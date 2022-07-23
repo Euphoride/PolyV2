@@ -5,12 +5,13 @@ import {Pipeline} from './src/Pipelines';
 import RoutePipeline from './src/RoutingPipeline';
 
 import { MongoClient, MongoClientOptions, ServerApiVersion  } from 'mongodb';
+import { DatabaseTablePair } from './types/InitialRequestTypes';
 
 const app = express();
 
 app.use(express.json());
 
-const KVRoseTree: RoseTree<String, String[]> = {
+const KVRoseTree: RoseTree<String, DatabaseTablePair> = {
     kind: "Node",
     key: "/",
     value: ["Mongo", "Base"],
@@ -59,13 +60,15 @@ const options: MongoClientOptions = { serverApi: ServerApiVersion.v1 };
 
 
 app.get("/", async (req, res) => {
-    res.send("Hello, world!");
-    res.end();
     
     const client = new MongoClient(uri, options);
     // await client.connect();
 
-    RoutePipeline(req, client);
+    RoutePipeline(req, client, KVRoseTree, (data) => {
+        res.header("Content-Type", "application/json");
+        res.send(data);
+        res.end();
+    });
 });
 
 app.listen(3000, () => console.log("Currently listening (God willing)!"));

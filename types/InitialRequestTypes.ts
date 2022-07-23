@@ -1,3 +1,4 @@
+import { Collection } from "mongodb";
 import { JSONObject } from "./CommonTypes";
 
 export type Cookies = {
@@ -8,15 +9,20 @@ export type HTTPHeaders = {
     [index: string] : string
 };
 
-export type HTTPMethod = "GET" | "POST" | "DELETE"
+export type HTTPMethod = "GET" | "POST" | "DELETE";
 
-export type InitialRequestNoCookie = {
+export type DatabaseTablePair = [string, string];
+
+
+export type GeneralRequestOptions = {
     Verb : HTTPMethod, 
     Headers: HTTPHeaders,
-    Path: String,
-    Data: JSONObject
+    Path: string,
+    Data: JSONObject,
+    DataProvider: DatabaseTablePair,
+    TableObject: Collection<Document>   // Mongo Collection | SQL table
 };
 
-export type InitialRequest = InitialRequestNoCookie & {
+export type GROWithCookies = GeneralRequestOptions & {
     Cookies: Cookies
 };

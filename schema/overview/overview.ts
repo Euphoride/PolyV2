@@ -24,7 +24,7 @@ type RoseTree<A, B> =
  * 
  */
 
-const findInTree = (key: String[], overview: RoseTree<String, String>): Maybe<String> => {
+const findInTree = <A, B>(key: A[], overview: RoseTree<A, B>): B => {
     if (key.length === 0 || overview.kind == "Leaf") {
         return overview.value;
     }
@@ -42,7 +42,7 @@ const findInTree = (key: String[], overview: RoseTree<String, String>): Maybe<St
     return mostSpecificChildValue;
 };
 
-const modifyTree = (key: String[], value: String, overview: RoseTree<String, String>): RoseTree<String, String> => {
+const modifyTree = <A, B>(key: A[], value: B, overview: RoseTree<A, B>): RoseTree<A, B> => {
     if (key.length === 0 && overview.kind === "Leaf") {
         return {...overview, value: value};
     }
@@ -67,7 +67,7 @@ const modifyTree = (key: String[], value: String, overview: RoseTree<String, Str
     return {...overview, children: newChildren};
 };
 
-const deleteInTree = (key: String[], overview: RoseTree<String, String>): RoseTree<String, String> => {
+const deleteInTree =<A, B>(key: A[], overview: RoseTree<A, B>): RoseTree<A, B> => {
     if (overview.kind === "Leaf") {
         return overview;
     }
@@ -89,8 +89,8 @@ const deleteInTree = (key: String[], overview: RoseTree<String, String>): RoseTr
 }
 
 
-function buildNewChild(key: String[], value: String) {
-        const templateNewChild: RoseTree<String, String> = {
+function buildNewChild<A, B>(key: A[], value: B) {
+        const templateNewChild: RoseTree<A, B> = {
             kind: "Leaf",
             key: key[0],
             value: value

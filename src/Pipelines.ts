@@ -7,12 +7,13 @@ import { bind, compose } from './Maybe';
 type LazyPipelineStage<A, B> = {
     andThen:  <C>(callback: StateTransformer<B, C>) => LazyPipelineStage<A, C>,
     impureThen: <C>(callback: StateTransformer<B, C>) => LazyPipelineStage<A, C>,
-    feed: (a: A) => Maybe<B>
+    feed: (a: A) => Maybe<B>,
+    pipe: <C>(pipeline: LazyPipelineStage<B, C>) => LazyPipelineStage<A, C>
 };
 
 
 export function LazyPipeline<A>(strictMode : boolean = true): LazyPipelineStage<A, A> {
-    return LazyPipeline_<A, A>(x => x);
+    return LazyPipeline_<A, A>(x => x, strictMode);
 }
 
 
@@ -22,13 +23,17 @@ function LazyPipeline_<A, B>(startState: StateTransformer<A, B>, strictMode : bo
     }
 
     const testPure = <C>(chain: (transform: StateTransformer<B, C>) => LazyPipelineStage<A, C>) => {
-        const boop = (pureFn: StateTransformer<B, C>): LazyPipelineStage<A, C> => {
-            if (strictMode) chain(pureFn);
+        return (fn: StateTransformer<B, C>): LazyPipelineStage<A, C> => {
+            const pureFn = (state: B): Maybe<C> => {
+                if (strictMode) {
+                    fn(state);
+                }
+
+                return fn(state);
+            };
 
             return chain(pureFn);
         }
-
-        return boop;
     }
 
     const impureThen = <C>(transform: StateTransformer<B, C>): LazyPipelineStage<A, C> => {
@@ -40,15 +45,24 @@ function LazyPipeline_<A, B>(startState: StateTransformer<A, B>, strictMode : bo
     
     const andThen = testPure(impureThen);
 
+
     const feed = (a: A): Maybe<B> => {
         return startState(a);
     }
 
+    const pipe = <C>(pipeline: LazyPipelineStage<B, C>): LazyPipelineStage<A, C> => {
+        return andThen(res => {
+            const pipelineRes = pipeline.feed(res);
+
+            return pipelineRes;
+        });
+    }
 
     return {
         andThen,
         impureThen,
-        feed
+        feed,
+        pipe
     };
 }
 
@@ -56,7 +70,8 @@ function LazyPipeline_<A, B>(startState: StateTransformer<A, B>, strictMode : bo
 type PipelineStage<A> = {
     andThen:  <B>(callback: StateTransformer<A, B>) => PipelineStage<B>,
     impureThen: <B>(callback: StateTransformer<A, B>) => PipelineStage<B>,
-    releaseState: () => Maybe<A>
+    releaseState: () => Maybe<A>,
+    pipe: <B>(pipeline: LazyPipelineStage<A, B>) => PipelineStage<B>
 };
 
 
@@ -89,6 +104,14 @@ export function Pipeline<S>(startState: S, strictMode : boolean = true): Pipelin
         
         const andThen = testPure(impureThen);
 
+        const pipe = <B>(pipeline: LazyPipelineStage<A, B>): PipelineStage<B> => {
+            return andThen(res => {
+                const pipelineRes = pipeline.feed(res);
+    
+                return pipelineRes;
+            });
+        }
+
         
         const releaseState = () => {
             return preState;
@@ -98,7 +121,8 @@ export function Pipeline<S>(startState: S, strictMode : boolean = true): Pipelin
         return {
             andThen,
             impureThen,
-            releaseState
+            releaseState,
+            pipe
         };
     };
 
