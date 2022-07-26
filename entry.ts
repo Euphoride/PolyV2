@@ -3,13 +3,7 @@ import express, { Request, Response } from "express";
 import RoutePipeline from "./src/RoutingPipeline";
 
 import { MongoClient, MongoClientOptions, ServerApiVersion } from "mongodb";
-import { Pipeline } from "./src/Pipelines";
-import {
-    modifyTree,
-    deleteInTree,
-    findInTree,
-    RoseTree,
-} from "./schema/overview/overview";
+import { RoseTree } from "./schema/overview/overview";
 
 const app = express();
 
@@ -28,8 +22,7 @@ const KVRoseTree: RoseTree<String, string[]> = {
     ],
 };
 
-const MongoURI =
-    "";
+const MongoURI = "";
 const options: MongoClientOptions = { serverApi: ServerApiVersion.v1 };
 
 const handler = async (req: Request, res: Response) => {
@@ -37,7 +30,7 @@ const handler = async (req: Request, res: Response) => {
     await client.connect();
 
     RoutePipeline(req, res, client, KVRoseTree);
-}
+};
 
 app.get("/", handler);
 app.post("/", handler);

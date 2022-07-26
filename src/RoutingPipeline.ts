@@ -50,21 +50,21 @@ const fetchResolver = (
 
 const modifyResolver = (
     gro: GeneralRequestOptions,
-    responseCallback: (data: JSONObject) => void, 
+    responseCallback: (data: JSONObject) => void,
     errorCallback: (error: any) => void
 ) => {
     return () => {
         if (!gro.Data.search) {
             return putResolver(gro, responseCallback, errorCallback)();
         }
-       
+
         // @ts-ignore
         gro.TableObject.findOneAndUpdate(
             gro.Data.search,
             {
                 $set: gro.Data.set,
             },
-            {returnNewDocument: true},
+            { returnNewDocument: true },
             (err: any, result: any) => {
                 if (err) {
                     errorCallback(err);
@@ -94,7 +94,6 @@ const deleteResolver = (
     };
 };
 
-
 export default function RoutePipeline(
     req: Request,
     response: Response,
@@ -102,7 +101,7 @@ export default function RoutePipeline(
     tree: RoseTree<String, string[]>
 ) {
     const MongoProviderPipeline = LazyPipeline<UnresolvedProviderGRO>()
-        .andThen((res) => { 
+        .andThen((res) => {
             const tableObject = client
                 .db(res.DataProvider[1])
                 .collection(res.DataProvider[2]);
@@ -111,34 +110,49 @@ export default function RoutePipeline(
         .impureThen((res) => {
             switch (res.Verb) {
                 case "GET":
-                    fetchResolver(res, (result: any) => {
-                        response.send({message: "Operation successful", result: result});
-                    }, (err: any) => {
-                        response.send({
-                            message: "Operation failed",
-                            err: err
-                        });
-                    })();
+                    fetchResolver(
+                        res,
+                        (result: any) => {
+                            response.send({
+                                message: "Operation successful",
+                                result: result,
+                            });
+                        },
+                        (err: any) => {
+                            response.send({
+                                message: "Operation failed",
+                                err: err,
+                            });
+                        }
+                    )();
                     break;
                 case "POST":
-                    modifyResolver(res, (result : any) => {
-                        response.send({message: "Operation successful"});
-                    }, (err: any) => {
-                        response.send({
-                            message: "Operation failed",
-                            err: err
-                        });
-                    })();
+                    modifyResolver(
+                        res,
+                        (result: any) => {
+                            response.send({ message: "Operation successful" });
+                        },
+                        (err: any) => {
+                            response.send({
+                                message: "Operation failed",
+                                err: err,
+                            });
+                        }
+                    )();
                     break;
                 case "DELETE":
-                    deleteResolver(res, (result: any) => {
-                        response.send({message: "Operation successful"});
-                    }, (err: any) => {
-                        response.send({
-                            message: "Operation failed",
-                            err: err
-                        });
-                    })();
+                    deleteResolver(
+                        res,
+                        (result: any) => {
+                            response.send({ message: "Operation successful" });
+                        },
+                        (err: any) => {
+                            response.send({
+                                message: "Operation failed",
+                                err: err,
+                            });
+                        }
+                    )();
                     break;
                 default:
                     return Nothing;
@@ -146,12 +160,13 @@ export default function RoutePipeline(
             return res;
         })
         .andThen((res) => {
-            const {TableObject, ...nres} = res;
+            const { TableObject, ...nres } = res;
             return nres;
         });
 
-    const SQLProviderPipeline = LazyPipeline<UnresolvedProviderGRO>()
-        .andThen(res => res);
+    const SQLProviderPipeline = LazyPipeline<UnresolvedProviderGRO>().andThen(
+        (res) => res
+    );
 
     const initialPipe = LazyPipeline<Request>()
         .andThen((req) => {
@@ -174,9 +189,11 @@ export default function RoutePipeline(
         .andThen((res) => {
             return { ...res, DataProvider: findInTree(res.Path, tree) };
         })
-        .conditionalPipe((res) => res.DataProvider[0] === "Mongo", MongoProviderPipeline, SQLProviderPipeline);
+        .conditionalPipe(
+            (res) => res.DataProvider[0] === "Mongo",
+            MongoProviderPipeline,
+            SQLProviderPipeline
+        );
 
-    
     initialPipe.feed(req);
-
 }
