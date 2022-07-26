@@ -3,96 +3,16 @@ import { Request, Response } from "express";
 import { MongoClient } from "mongodb";
 import { RoseTree, findInTree } from "../schema/overview/rosetree";
 
-import { JSONObject, Nothing } from "../types/CommonTypes";
+import { Nothing } from "../types/CommonTypes";
 
 import {
 	HTTPHeaders,
 	HTTPMethod,
-	GeneralRequestOptions,
 	UnresolvedProviderGRO,
 } from "../types/InitialRequestTypes";
 
 import { LazyPipeline } from "./Pipelines";
-
-const putResolver = (
-	gro: GeneralRequestOptions,
-	responseCallback: (data: JSONObject) => void,
-	errorCallback: (error: any) => void
-) => {
-	return () => {
-		// @ts-ignore
-		gro.TableObject.insertOne(gro.Data, (err: any, result: any) => {
-			if (err) {
-				errorCallback(err);
-				return;
-			}
-			responseCallback(result);
-		});
-	};
-};
-
-const fetchResolver = (
-	gro: GeneralRequestOptions,
-	responseCallback: (data: JSONObject) => void,
-	errorCallback: (error: any) => void
-) => {
-	return () => {
-		// @ts-ignore
-		gro.TableObject.findOne(gro.Data, (err: any, result: any) => {
-			if (err) {
-				errorCallback(err);
-				return;
-			}
-			responseCallback(result);
-		});
-	};
-};
-
-const modifyResolver = (
-	gro: GeneralRequestOptions,
-	responseCallback: (data: JSONObject) => void,
-	errorCallback: (error: any) => void
-) => {
-	return () => {
-		if (!gro.Data.search) {
-			return putResolver(gro, responseCallback, errorCallback)();
-		}
-
-		// @ts-ignore
-		gro.TableObject.findOneAndUpdate(
-			gro.Data.search,
-			{
-				$set: gro.Data.set,
-			},
-			{ returnNewDocument: true },
-			(err: any, result: any) => {
-				if (err) {
-					errorCallback(err);
-					return;
-				}
-				console.log(result);
-				responseCallback(result);
-			}
-		);
-	};
-};
-
-const deleteResolver = (
-	gro: GeneralRequestOptions,
-	responseCallback: (data: JSONObject) => void,
-	errorCallback: (error: any) => void
-) => {
-	return () => {
-		// @ts-ignore
-		gro.TableObject.findOneAndDelete(gro.Data, (err: any, result: any) => {
-			if (err) {
-				errorCallback(err);
-				return;
-			}
-			responseCallback(result);
-		});
-	};
-};
+import { fetchResolver, modifyResolver, deleteResolver } from "./Resolvers";
 
 export default function RoutePipeline(
 	req: Request,
@@ -124,7 +44,7 @@ export default function RoutePipeline(
 							err: err,
 						});
 					}
-				)();
+				);
 				break;
 			case "POST":
 				modifyResolver(
@@ -138,7 +58,7 @@ export default function RoutePipeline(
 							err: err,
 						});
 					}
-				)();
+				);
 				break;
 			case "DELETE":
 				deleteResolver(
@@ -152,7 +72,7 @@ export default function RoutePipeline(
 							err: err,
 						});
 					}
-				)();
+				);
 				break;
 			default:
 				return Nothing;
