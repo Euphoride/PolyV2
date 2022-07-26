@@ -1,5 +1,4 @@
-import { Collection } from "mongodb";
-import { JSONObject } from "./CommonTypes";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export type Cookies = {
     [index: string]: string;

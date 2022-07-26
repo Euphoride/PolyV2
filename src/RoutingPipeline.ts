@@ -7,12 +7,11 @@ import { Nothing } from "../types/CommonTypes";
 
 import {
 	HTTPHeaders,
-	HTTPMethod,
-	UnresolvedProviderGRO,
+	HTTPMethod
 } from "../types/InitialRequestTypes";
+import { MongoProviderPipelineResolver, SQLProviderPipeline } from "./DatabasePipelines";
 
 import { LazyPipeline } from "./Pipelines";
-import { fetchResolver, modifyResolver, deleteResolver } from "./Resolvers";
 
 export default function RoutePipeline(
 	req: Request,
@@ -20,74 +19,6 @@ export default function RoutePipeline(
 	client: MongoClient,
 	tree: RoseTree<string, string[]>
 ) {
-	const MongoProviderPipeline = LazyPipeline<UnresolvedProviderGRO>()
-		.andThen((res) => {
-			const tableObject = client
-				.db(res.DataProvider[1])
-				.collection(res.DataProvider[2]);
-			return { ...res, TableObject: tableObject };
-		})
-		.impureThen((res) => {
-			switch (res.Verb) {
-			case "GET":
-				fetchResolver(
-					res,
-					(result: any) => {
-						response.send({
-							message: "Operation successful",
-							result: result,
-						});
-					},
-					(err: any) => {
-						response.send({
-							message: "Operation failed",
-							err: err,
-						});
-					}
-				);
-				break;
-			case "POST":
-				modifyResolver(
-					res,
-					(result: any) => {
-						response.send({ message: "Operation successful" });
-					},
-					(err: any) => {
-						response.send({
-							message: "Operation failed",
-							err: err,
-						});
-					}
-				);
-				break;
-			case "DELETE":
-				deleteResolver(
-					res,
-					(result: any) => {
-						response.send({ message: "Operation successful" });
-					},
-					(err: any) => {
-						response.send({
-							message: "Operation failed",
-							err: err,
-						});
-					}
-				);
-				break;
-			default:
-				return Nothing;
-			}
-			return res;
-		})
-		.andThen((res) => {
-			const { TableObject, ...nres } = res;
-			return nres;
-		});
-
-	const SQLProviderPipeline = LazyPipeline<UnresolvedProviderGRO>().andThen(
-		(res) => res
-	);
-
 	const initialPipe = LazyPipeline<Request>()
 		.andThen((req) => {
 			const method = req.method;
@@ -111,7 +42,7 @@ export default function RoutePipeline(
 		})
 		.conditionalPipe(
 			(res) => res.DataProvider[0] === "Mongo",
-			MongoProviderPipeline,
+			MongoProviderPipelineResolver(response, client),
 			SQLProviderPipeline
 		);
 

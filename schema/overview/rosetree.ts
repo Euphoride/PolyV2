@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 type RoseTree<A, B> =
     | { kind: "Leaf"; key: A; value: B }
     | { kind: "Node"; key: A; value: B; children: RoseTree<A, B>[] };
