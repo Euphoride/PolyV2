@@ -1,4 +1,4 @@
-import { Maybe, Nothing } from "../types/CommonTypes";
+import { Maybe } from "../types/CommonTypes";
 import { StateTransformer } from "../types/PipelineTypes";
 
 import { bind, compose } from "./Maybe";
