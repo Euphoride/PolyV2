@@ -4,7 +4,7 @@ exports.Pipeline = exports.LazyPipeline = void 0;
 var Maybe_1 = require("./Maybe");
 function LazyPipeline(strictMode) {
     if (strictMode === void 0) { strictMode = true; }
-    return LazyPipeline_(function (x) { return x; });
+    return LazyPipeline_(function (x) { return x; }, strictMode);
 }
 exports.LazyPipeline = LazyPipeline;
 function LazyPipeline_(startState, strictMode) {
@@ -13,12 +13,15 @@ function LazyPipeline_(startState, strictMode) {
         return (0, Maybe_1.compose)(pState)(nTransform);
     };
     var testPure = function (chain) {
-        var boop = function (pureFn) {
-            if (strictMode)
-                chain(pureFn);
+        return function (fn) {
+            var pureFn = function (state) {
+                if (strictMode) {
+                    fn(state);
+                }
+                return fn(state);
+            };
             return chain(pureFn);
         };
-        return boop;
     };
     var impureThen = function (transform) {
         var comp = nextComposition(startState, transform);
@@ -29,10 +32,28 @@ function LazyPipeline_(startState, strictMode) {
     var feed = function (a) {
         return startState(a);
     };
+    var pipe = function (pipeline) {
+        return andThen(function (res) {
+            var pipelineRes = pipeline.feed(res);
+            return pipelineRes;
+        });
+    };
+    var conditionalPipe = function (conditional, pipeT, pipeF) {
+        return impureThen(function (res) {
+            if (conditional(res)) {
+                return pipeT.feed(res);
+            }
+            else {
+                return pipeF.feed(res);
+            }
+        });
+    };
     return {
         andThen: andThen,
         impureThen: impureThen,
-        feed: feed
+        feed: feed,
+        pipe: pipe,
+        conditionalPipe: conditionalPipe
     };
 }
 function Pipeline(startState, strictMode) {
@@ -58,13 +79,20 @@ function Pipeline(startState, strictMode) {
             return nextStage(preState, transform);
         };
         var andThen = testPure(impureThen);
+        var pipe = function (pipeline) {
+            return andThen(function (res) {
+                var pipelineRes = pipeline.feed(res);
+                return pipelineRes;
+            });
+        };
         var releaseState = function () {
             return preState;
         };
         return {
             andThen: andThen,
             impureThen: impureThen,
-            releaseState: releaseState
+            releaseState: releaseState,
+            pipe: pipe
         };
     };
     return chainball(startState);

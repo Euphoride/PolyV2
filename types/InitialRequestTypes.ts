@@ -11,16 +11,18 @@ export type HTTPHeaders = {
 
 export type HTTPMethod = "GET" | "POST" | "DELETE";
 
-export type DatabaseTablePair = [string, string];
 
 
-export type GeneralRequestOptions = {
+export type UnresolvedProviderGRO = {
     Verb : HTTPMethod, 
     Headers: HTTPHeaders,
-    Path: string,
-    Data: JSONObject,
-    DataProvider: DatabaseTablePair,
-    TableObject: Collection<Document>   // Mongo Collection | SQL table
+    Path: string[],
+    Data: any,
+    DataProvider: string[]
+};
+
+export type GeneralRequestOptions = UnresolvedProviderGRO & {
+    TableObject: any   // Mongo Collection | SQL table
 };
 
 export type GROWithCookies = GeneralRequestOptions & {

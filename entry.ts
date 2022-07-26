@@ -1,74 +1,45 @@
-import express from 'express';
-import { modifyTree, deleteInTree, findInTree, RoseTree } from './schema/overview/overview';
-import {Pipeline} from './src/Pipelines';
+import express, { Request, Response } from "express";
 
-import RoutePipeline from './src/RoutingPipeline';
+import RoutePipeline from "./src/RoutingPipeline";
 
-import { MongoClient, MongoClientOptions, ServerApiVersion  } from 'mongodb';
-import { DatabaseTablePair } from './types/InitialRequestTypes';
+import { MongoClient, MongoClientOptions, ServerApiVersion } from "mongodb";
+import { Pipeline } from "./src/Pipelines";
+import {
+    modifyTree,
+    deleteInTree,
+    findInTree,
+    RoseTree,
+} from "./schema/overview/overview";
 
 const app = express();
 
 app.use(express.json());
 
-const KVRoseTree: RoseTree<String, DatabaseTablePair> = {
+const KVRoseTree: RoseTree<String, string[]> = {
     kind: "Node",
     key: "/",
-    value: ["Mongo", "Base"],
+    value: ["Mongo", "PlaygroundTest", "TestCollection"],
     children: [
         {
             kind: "Leaf",
             key: "Accounts",
-            value: ["SQL", "TableX"]
-        }
-    ]
+            value: ["SQL", "SQLPlaygroundDB", "PGTable"],
+        },
+    ],
 };
 
-/*
-console.log(KVRoseTree)
-
-    const processedRoseTree = Pipeline(KVRoseTree)
-        .impureThen(rt => {
-            console.log(findInTree(["Accounts"], rt));
-            console.log(findInTree([], rt));
-            return rt;
-        })
-        .andThen(rt => {
-            return modifyTree(["Accounts", "Blogs"], "BlogProvider", rt)
-        })
-        .impureThen(rt => {
-            console.log(findInTree(["Accounts", "Blogs"], rt));
-            return rt;
-        })
-        .andThen(rt => {
-            // return deleteInTree(["Account", "Blogs"], rt);
-            return rt
-        })
-        .impureThen(rt => {
-            console.log(findInTree(["Blogs", "Bogs"], rt));
-            return rt;
-        })
-        .releaseState();
-
-
-    console.log(processedRoseTree);
-*/
-
-const uri = "";
+const MongoURI =
+    "";
 const options: MongoClientOptions = { serverApi: ServerApiVersion.v1 };
 
+const handler = async (req: Request, res: Response) => {
+    const client = new MongoClient(MongoURI, options);
+    await client.connect();
 
+    RoutePipeline(req, res, client, KVRoseTree);
+}
 
-app.get("/", async (req, res) => {
-    
-    const client = new MongoClient(uri, options);
-    // await client.connect();
-
-    RoutePipeline(req, client, KVRoseTree, (data) => {
-        res.header("Content-Type", "application/json");
-        res.send(data);
-        res.end();
-    });
-});
-
+app.get("/", handler);
+app.post("/", handler);
+app.delete("/", handler);
 app.listen(3000, () => console.log("Currently listening (God willing)!"));

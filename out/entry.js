@@ -47,55 +47,32 @@ app.use(express_1.default.json());
 var KVRoseTree = {
     kind: "Node",
     key: "/",
-    value: ["Mongo", "Base"],
+    value: ["Mongo", "PlaygroundTest", "TestCollection"],
     children: [
         {
             kind: "Leaf",
             key: "Accounts",
-            value: ["SQL", "TableX"]
-        }
-    ]
+            value: ["SQL", "SQLPlaygroundDB", "PGTable"],
+        },
+    ],
 };
-/*
-console.log(KVRoseTree)
-
-    const processedRoseTree = Pipeline(KVRoseTree)
-        .impureThen(rt => {
-            console.log(findInTree(["Accounts"], rt));
-            console.log(findInTree([], rt));
-            return rt;
-        })
-        .andThen(rt => {
-            return modifyTree(["Accounts", "Blogs"], "BlogProvider", rt)
-        })
-        .impureThen(rt => {
-            console.log(findInTree(["Accounts", "Blogs"], rt));
-            return rt;
-        })
-        .andThen(rt => {
-            // return deleteInTree(["Account", "Blogs"], rt);
-            return rt
-        })
-        .impureThen(rt => {
-            console.log(findInTree(["Blogs", "Bogs"], rt));
-            return rt;
-        })
-        .releaseState();
-
-
-    console.log(processedRoseTree);
-*/
-var uri = "mongodb+srv://MongoUser:MongoUserHouseCat@playground.rjsvz.mongodb.net/?retryWrites=true&w=majority";
+var MongoURI = "mongodb+srv://MongoUser:MongoUserHouseCat@playground.rjsvz.mongodb.net/?retryWrites=true&w=majority";
 var options = { serverApi: mongodb_1.ServerApiVersion.v1 };
-app.get("/", function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+var handler = function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     var client;
     return __generator(this, function (_a) {
-        res.send("Hello, world!");
-        res.end();
-        client = new mongodb_1.MongoClient(uri, options);
-        // await client.connect();
-        (0, RoutingPipeline_1.default)(req, client);
-        return [2 /*return*/];
+        switch (_a.label) {
+            case 0:
+                client = new mongodb_1.MongoClient(MongoURI, options);
+                return [4 /*yield*/, client.connect()];
+            case 1:
+                _a.sent();
+                (0, RoutingPipeline_1.default)(req, res, client, KVRoseTree);
+                return [2 /*return*/];
+        }
     });
-}); });
+}); };
+app.get("/", handler);
+app.post("/", handler);
+app.delete("/", handler);
 app.listen(3000, function () { return console.log("Currently listening (God willing)!"); });
