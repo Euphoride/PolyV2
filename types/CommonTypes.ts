@@ -9,5 +9,14 @@ type JSONObject =
     | boolean
     | { [x: string]: JSONObject }
     | JSONObject[] ;
-
+    
+    
 export { Maybe, Nothing, JSONObject };
+
+export type ServiceConfiguration = {
+    Database?: string;
+    Table: string;
+    ServiceProvider: string;
+    AccessControl: { [index: string]: string; };
+};
+

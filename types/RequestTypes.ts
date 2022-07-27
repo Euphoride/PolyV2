@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { ServiceConfiguration } from "./CommonTypes";
+
 export type Cookies = {
     [index: string]: string;
 };
@@ -31,11 +33,4 @@ export type LoadedRequest = {
 	headers: {[index: string]: any};
 	body: string;
 	path: string;
-};
-
-export type ServiceConfiguration = {
-    Database: string;
-    Table: string;
-    ServiceProvider: string;
-    AccessControl: { [index: string]: string; };
 };

@@ -4,22 +4,23 @@ import { ServerResponse } from "http";
 import { MongoClient } from "mongodb";
 import { RoseTree, findInTree } from "../schema/overview/rosetree";
 
-import { Nothing } from "../types/CommonTypes";
+import { Nothing, ServiceConfiguration } from "../types/CommonTypes";
+import { SQLPoolConfiguration } from "../types/DatabaseTypes";
 
 import {
 	HTTPHeaders,
 	HTTPMethod,
 	LoadedRequest,
-	ServiceConfiguration
 } from "../types/RequestTypes";
-import { MongoProviderPipelineResolver, SQLProviderPipeline } from "./DatabasePipelines";
+import { MongoProviderPipelineResolver, SQLProviderPipelineResolver } from "./DatabasePipelines";
 
 import { LazyPipeline } from "./Pipelines";
 
 export default function RoutePipeline(
 	req: LoadedRequest,
 	response: ServerResponse,
-	client: MongoClient,
+	mongoClient: MongoClient,
+	sqlPoolConfiguration: SQLPoolConfiguration,
 	tree: RoseTree<string, ServiceConfiguration>
 ) {
 	const initialPipe = LazyPipeline<LoadedRequest>()
@@ -45,8 +46,8 @@ export default function RoutePipeline(
 		})
 		.conditionalPipe(
 			(res) => res.ServiceConfiguration.ServiceProvider === "Mongo",
-			MongoProviderPipelineResolver(response, client),
-			SQLProviderPipeline
+			MongoProviderPipelineResolver(response, mongoClient),
+			SQLProviderPipelineResolver(response, sqlPoolConfiguration)
 		);
 
 	initialPipe.feed(req);
