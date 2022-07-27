@@ -2,7 +2,7 @@
 import { ServerResponse } from "http";
 import { MongoClient } from "mongodb";
 import { Nothing } from "../types/CommonTypes";
-import { GeneralRequestOptions, UnresolvedProviderGRO } from "../types/InitialRequestTypes";
+import { GeneralRequestOptions, UnresolvedProviderGRO } from "../types/RequestTypes";
 import { LazyPipeline } from "./Pipelines";
 import { fetchResolver, modifyResolver, deleteResolver } from "./Resolvers";
 
@@ -12,6 +12,7 @@ export function MongoProviderPipelineResolver(response: ServerResponse, client: 
 		if (["GET", "POST", "DELETE"].includes(res.Verb)) {
 			response.writeHead(200, {"content-type": "application/json"});
 		}
+
 		switch (res.Verb) {
 		case "GET":
 			fetchResolver(
@@ -28,6 +29,7 @@ export function MongoProviderPipelineResolver(response: ServerResponse, client: 
 						message: "Operation failed",
 						err: err,
 					}));
+					response.end();
 				}
 			);
 			break;
@@ -35,13 +37,15 @@ export function MongoProviderPipelineResolver(response: ServerResponse, client: 
 			modifyResolver(
 				res,
 				(_result: any) => {
-					response.write({ message: "Operation successful" });
+					response.write(JSON.stringify({ message: "Operation successful" }));
+					response.end();
 				},
 				(err: any) => {
-					response.write({
+					response.write(JSON.stringify({
 						message: "Operation failed",
 						err: err,
-					});
+					}));
+					response.end();
 				}
 			);
 			break;
@@ -49,13 +53,15 @@ export function MongoProviderPipelineResolver(response: ServerResponse, client: 
 			deleteResolver(
 				res,
 				(_result: any) => {
-					response.write({ message: "Operation successful" });
+					response.write(JSON.stringify({ message: "Operation successful" }));
+					response.end();
 				},
 				(err: any) => {
-					response.write({
+					response.write(JSON.stringify({
 						message: "Operation failed",
 						err: err,
-					});
+					}));
+					response.end();
 				}
 			);
 			break;
@@ -71,8 +77,8 @@ export function MongoProviderPipelineResolver(response: ServerResponse, client: 
 	return LazyPipeline<UnresolvedProviderGRO>()
 		.andThen((res) => {
 			const tableObject = client
-				.db(res.DataProvider[1])
-				.collection(res.DataProvider[2]);
+				.db(res.ServiceConfiguration.Database)
+				.collection(res.ServiceConfiguration.Table);
 			return { ...res, TableObject: tableObject };
 		})
 		.impureThen(resolution)

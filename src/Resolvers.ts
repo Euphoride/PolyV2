@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { JSONObject } from "../types/CommonTypes";
-import { GeneralRequestOptions } from "../types/InitialRequestTypes";
+import { GeneralRequestOptions } from "../types/RequestTypes";
 
 const putResolver = (
 	gro: GeneralRequestOptions,

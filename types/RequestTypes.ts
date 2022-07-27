@@ -15,7 +15,7 @@ export type UnresolvedProviderGRO = {
     Headers: HTTPHeaders;
     Path: string[];
     Data: any;
-    DataProvider: string[];
+    ServiceConfiguration: ServiceConfiguration;
 };
 
 export type GeneralRequestOptions = UnresolvedProviderGRO & {
@@ -28,7 +28,14 @@ export type GROWithCookies = GeneralRequestOptions & {
 
 export type LoadedRequest = { 
 	method: string;
-	headers: {[index: string]: any},
-	body: string,
-	path: string
+	headers: {[index: string]: any};
+	body: string;
+	path: string;
+};
+
+export type ServiceConfiguration = {
+    Database: string;
+    Table: string;
+    ServiceProvider: string;
+    AccessControl: { [index: string]: string; };
 };

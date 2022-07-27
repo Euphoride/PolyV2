@@ -9,8 +9,9 @@ import { Nothing } from "../types/CommonTypes";
 import {
 	HTTPHeaders,
 	HTTPMethod,
-	LoadedRequest
-} from "../types/InitialRequestTypes";
+	LoadedRequest,
+	ServiceConfiguration
+} from "../types/RequestTypes";
 import { MongoProviderPipelineResolver, SQLProviderPipeline } from "./DatabasePipelines";
 
 import { LazyPipeline } from "./Pipelines";
@@ -19,7 +20,7 @@ export default function RoutePipeline(
 	req: LoadedRequest,
 	response: ServerResponse,
 	client: MongoClient,
-	tree: RoseTree<string, string[]>
+	tree: RoseTree<string, ServiceConfiguration>
 ) {
 	const initialPipe = LazyPipeline<LoadedRequest>()
 		.andThen((req) => {
@@ -40,10 +41,10 @@ export default function RoutePipeline(
 			return { ...res, Path: res.Path.split("/") };
 		})
 		.andThen((res) => {
-			return { ...res, DataProvider: findInTree(res.Path, tree) };
+			return { ...res, ServiceConfiguration: findInTree(res.Path, tree) };
 		})
 		.conditionalPipe(
-			(res) => res.DataProvider[0] === "Mongo",
+			(res) => res.ServiceConfiguration.ServiceProvider === "Mongo",
 			MongoProviderPipelineResolver(response, client),
 			SQLProviderPipeline
 		);

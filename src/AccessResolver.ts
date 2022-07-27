@@ -1,0 +1,1 @@
+// Todo: Write pipeline that should resolve the current access token to a user type and return whether access is granted

@@ -4,17 +4,26 @@ import RoutePipeline from "../src/RoutingPipeline";
 
 import { MongoClient, MongoClientOptions, ServerApiVersion } from "mongodb";
 import { RoseTree } from "../schema/overview/rosetree";
-import { LoadedRequest } from "../types/InitialRequestTypes";
+import { LoadedRequest, ServiceConfiguration } from "../types/RequestTypes";
 import { response } from "express";
 
 
 
 
 export function initialisePoly() {
-	const KVRoseTree: RoseTree<string, string[]> = {
+	const KVRoseTree: RoseTree<string, ServiceConfiguration> = {
 		kind: "Leaf",
 		key: "/",
-		value: ["Mongo", "PlaygroundTest", "TestCollection"],
+		value: {
+			ServiceProvider: "Mongo", 
+			Database: "PlaygroundTest", 
+			Table: "TestCollection",
+			AccessControl: {
+				read: "*",
+				write: "*",
+				delete: "*"
+			}
+		},
 	};
     
 	return {
@@ -22,7 +31,7 @@ export function initialisePoly() {
 	};
 }
 
-export function startPoly(providers: RoseTree<string, string[]>) {
+export function startPoly(providers: RoseTree<string, ServiceConfiguration>) {
 	const MongoURI = "mongodb+srv://MongoUser:MongoUserHouseCat@playground.rjsvz.mongodb.net/?retryWrites=true&w=majority";
 	const options: MongoClientOptions = { serverApi: ServerApiVersion.v1 };
 
