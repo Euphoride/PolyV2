@@ -1,38 +1,5 @@
-import express, { Request, Response } from "express";
+import { initialisePoly, startPoly } from "./Poly/poly";
 
-import RoutePipeline from "./src/RoutingPipeline";
+const {app, providers} = initialisePoly();
 
-import { MongoClient, MongoClientOptions, ServerApiVersion } from "mongodb";
-import { RoseTree } from "./schema/overview/rosetree";
-
-const app = express();
-
-app.use(express.json());
-
-const KVRoseTree: RoseTree<string, string[]> = {
-	kind: "Node",
-	key: "/",
-	value: ["Mongo", "PlaygroundTest", "TestCollection"],
-	children: [
-		{
-			kind: "Leaf",
-			key: "Accounts",
-			value: ["SQL", "SQLPlaygroundDB", "PGTable"],
-		},
-	],
-};
-
-const MongoURI = "";
-const options: MongoClientOptions = { serverApi: ServerApiVersion.v1 };
-
-const handler = async (req: Request, res: Response) => {
-	const client = new MongoClient(MongoURI, options);
-	await client.connect();
-
-	RoutePipeline(req, res, client, KVRoseTree);
-};
-
-app.get("/", handler);
-app.post("/", handler);
-app.delete("/", handler);
-app.listen(3000, () => console.log("Currently listening (God willing)!"));
+startPoly(app, providers);
