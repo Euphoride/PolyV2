@@ -53,7 +53,7 @@ function LazyPipeline_(startState, strictMode) {
         impureThen: impureThen,
         feed: feed,
         pipe: pipe,
-        conditionalPipe: conditionalPipe
+        conditionalPipe: conditionalPipe,
     };
 }
 function Pipeline(startState, strictMode) {
@@ -92,7 +92,7 @@ function Pipeline(startState, strictMode) {
             andThen: andThen,
             impureThen: impureThen,
             releaseState: releaseState,
-            pipe: pipe
+            pipe: pipe,
         };
     };
     return chainball(startState);
