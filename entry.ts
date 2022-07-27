@@ -1,5 +1,5 @@
 import { initialisePoly, startPoly } from "./Poly/poly";
 
-const {app, providers} = initialisePoly();
+const {providers} = initialisePoly();
 
-startPoly(app, providers);
+startPoly(providers);

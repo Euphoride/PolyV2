@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Response } from "express";
+import { ServerResponse } from "http";
 import { MongoClient } from "mongodb";
 import { Nothing } from "../types/CommonTypes";
 import { GeneralRequestOptions, UnresolvedProviderGRO } from "../types/InitialRequestTypes";
@@ -7,23 +7,27 @@ import { LazyPipeline } from "./Pipelines";
 import { fetchResolver, modifyResolver, deleteResolver } from "./Resolvers";
 
 
-export function MongoProviderPipelineResolver(response: Response, client: MongoClient) {
+export function MongoProviderPipelineResolver(response: ServerResponse, client: MongoClient) {
 	const resolution = (res: GeneralRequestOptions) => {
+		if (["GET", "POST", "DELETE"].includes(res.Verb)) {
+			response.writeHead(200, {"content-type": "application/json"});
+		}
 		switch (res.Verb) {
 		case "GET":
 			fetchResolver(
 				res,
 				(result: any) => {
-					response.send({
+					response.write(JSON.stringify({
 						message: "Operation successful",
 						result: result,
-					});
+					}));
+					response.end();
 				},
 				(err: any) => {
-					response.send({
+					response.write(JSON.stringify({
 						message: "Operation failed",
 						err: err,
-					});
+					}));
 				}
 			);
 			break;
@@ -31,10 +35,10 @@ export function MongoProviderPipelineResolver(response: Response, client: MongoC
 			modifyResolver(
 				res,
 				(_result: any) => {
-					response.send({ message: "Operation successful" });
+					response.write({ message: "Operation successful" });
 				},
 				(err: any) => {
-					response.send({
+					response.write({
 						message: "Operation failed",
 						err: err,
 					});
@@ -45,10 +49,10 @@ export function MongoProviderPipelineResolver(response: Response, client: MongoC
 			deleteResolver(
 				res,
 				(_result: any) => {
-					response.send({ message: "Operation successful" });
+					response.write({ message: "Operation successful" });
 				},
 				(err: any) => {
-					response.send({
+					response.write({
 						message: "Operation failed",
 						err: err,
 					});
@@ -56,6 +60,8 @@ export function MongoProviderPipelineResolver(response: Response, client: MongoC
 			);
 			break;
 		default:
+			response.writeHead(400);
+			response.write("Bad Request");
 			return Nothing;
 		}
 		return res;

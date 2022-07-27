@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { Request, Response } from "express";
+
+import { ServerResponse } from "http";
 import { MongoClient } from "mongodb";
 import { RoseTree, findInTree } from "../schema/overview/rosetree";
 
@@ -7,19 +8,20 @@ import { Nothing } from "../types/CommonTypes";
 
 import {
 	HTTPHeaders,
-	HTTPMethod
+	HTTPMethod,
+	LoadedRequest
 } from "../types/InitialRequestTypes";
 import { MongoProviderPipelineResolver, SQLProviderPipeline } from "./DatabasePipelines";
 
 import { LazyPipeline } from "./Pipelines";
 
 export default function RoutePipeline(
-	req: Request,
-	response: Response,
+	req: LoadedRequest,
+	response: ServerResponse,
 	client: MongoClient,
 	tree: RoseTree<string, string[]>
 ) {
-	const initialPipe = LazyPipeline<Request>()
+	const initialPipe = LazyPipeline<LoadedRequest>()
 		.andThen((req) => {
 			const method = req.method;
 

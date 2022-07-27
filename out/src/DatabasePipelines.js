@@ -28,25 +28,30 @@ var Pipelines_1 = require("./Pipelines");
 var Resolvers_1 = require("./Resolvers");
 function MongoProviderPipelineResolver(response, client) {
     var resolution = function (res) {
+        if (["GET", "POST", "DELETE"].includes(res.Verb)) {
+            response.writeHead(200, { "content-type": "application/json" });
+        }
         switch (res.Verb) {
             case "GET":
                 (0, Resolvers_1.fetchResolver)(res, function (result) {
-                    response.send({
+                    console.log("here!");
+                    response.write(JSON.stringify({
                         message: "Operation successful",
                         result: result,
-                    });
+                    }));
+                    response.end();
                 }, function (err) {
-                    response.send({
+                    response.write(JSON.stringify({
                         message: "Operation failed",
                         err: err,
-                    });
+                    }));
                 });
                 break;
             case "POST":
                 (0, Resolvers_1.modifyResolver)(res, function (_result) {
-                    response.send({ message: "Operation successful" });
+                    response.write({ message: "Operation successful" });
                 }, function (err) {
-                    response.send({
+                    response.write({
                         message: "Operation failed",
                         err: err,
                     });
@@ -54,15 +59,17 @@ function MongoProviderPipelineResolver(response, client) {
                 break;
             case "DELETE":
                 (0, Resolvers_1.deleteResolver)(res, function (_result) {
-                    response.send({ message: "Operation successful" });
+                    response.write({ message: "Operation successful" });
                 }, function (err) {
-                    response.send({
+                    response.write({
                         message: "Operation failed",
                         err: err,
                     });
                 });
                 break;
             default:
+                response.writeHead(400);
+                response.write("Bad Request");
                 return CommonTypes_1.Nothing;
         }
         return res;

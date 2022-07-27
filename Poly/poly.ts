@@ -1,16 +1,16 @@
-import express, { Express, Request, Response } from "express";
+import { createServer, IncomingMessage, ServerResponse } from "http";
 
 import RoutePipeline from "../src/RoutingPipeline";
 
 import { MongoClient, MongoClientOptions, ServerApiVersion } from "mongodb";
 import { RoseTree } from "../schema/overview/rosetree";
+import { LoadedRequest } from "../types/InitialRequestTypes";
+import { response } from "express";
+
+
 
 
 export function initialisePoly() {
-	const app = express();
-
-	app.use(express.json());
-
 	const KVRoseTree: RoseTree<string, string[]> = {
 		kind: "Leaf",
 		key: "/",
@@ -18,24 +18,40 @@ export function initialisePoly() {
 	};
     
 	return {
-		app: app,
 		providers: KVRoseTree
 	};
 }
 
-export function startPoly(app: Express, providers: RoseTree<string, string[]>) {
-	const MongoURI = "";
+export function startPoly(providers: RoseTree<string, string[]>) {
+	const MongoURI = "mongodb+srv://MongoUser:MongoUserHouseCat@playground.rjsvz.mongodb.net/?retryWrites=true&w=majority";
 	const options: MongoClientOptions = { serverApi: ServerApiVersion.v1 };
 
-	const handler = async (req: Request, res: Response) => {
+	const handler = async (req: LoadedRequest, res: ServerResponse) => {
 		const client = new MongoClient(MongoURI, options);
 		await client.connect();
 
 		RoutePipeline(req, res, client, providers);
 	};
 
-	app.get("/", handler);
-	app.post("/", handler);
-	app.delete("/", handler);
-	app.listen(3000, () => console.log("Currently listening (God willing)!"));
+	const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+		const buffer: any[] = [];
+		
+		req.on("data", (chunk: any) => {
+			buffer.push(chunk);
+		});
+
+		req.on("end", async () => {
+
+			const lreq : LoadedRequest = {
+				method: req.method || "",
+				headers: req.headers,
+				body: JSON.parse(buffer.join("")),
+				path: req.url || "/"
+			};
+
+			await handler(lreq, res);
+		});
+	});
+
+	server.listen(3000);
 }

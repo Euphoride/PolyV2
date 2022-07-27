@@ -40,24 +40,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.startPoly = exports.initialisePoly = void 0;
-var express_1 = __importDefault(require("express"));
+var http_1 = require("http");
 var RoutingPipeline_1 = __importDefault(require("../src/RoutingPipeline"));
 var mongodb_1 = require("mongodb");
 function initialisePoly() {
-    var app = (0, express_1.default)();
-    app.use(express_1.default.json());
     var KVRoseTree = {
         kind: "Leaf",
         key: "/",
         value: ["Mongo", "PlaygroundTest", "TestCollection"],
     };
     return {
-        app: app,
         providers: KVRoseTree
     };
 }
 exports.initialisePoly = initialisePoly;
-function startPoly(app, providers) {
+function startPoly(providers) {
     var _this = this;
     var MongoURI = "mongodb+srv://MongoUser:MongoUserHouseCat@playground.rjsvz.mongodb.net/?retryWrites=true&w=majority";
     var options = { serverApi: mongodb_1.ServerApiVersion.v1 };
@@ -75,9 +72,30 @@ function startPoly(app, providers) {
             }
         });
     }); };
-    app.get("/", handler);
-    app.post("/", handler);
-    app.delete("/", handler);
-    app.listen(3000, function () { return console.log("Currently listening (God willing)!"); });
+    var server = (0, http_1.createServer)(function (req, res) {
+        var buffer = [];
+        req.on("data", function (chunk) {
+            buffer.push(chunk);
+        });
+        req.on("end", function () { return __awaiter(_this, void 0, void 0, function () {
+            var lreq;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        lreq = {
+                            method: req.method || "",
+                            headers: req.headers,
+                            body: JSON.parse(buffer.join("")),
+                            path: req.url || "/"
+                        };
+                        return [4 /*yield*/, handler(lreq, res)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        }); });
+    });
+    server.listen(3000);
 }
 exports.startPoly = startPoly;

@@ -25,3 +25,10 @@ export type GeneralRequestOptions = UnresolvedProviderGRO & {
 export type GROWithCookies = GeneralRequestOptions & {
     Cookies: Cookies;
 };
+
+export type LoadedRequest = { 
+	method: string;
+	headers: {[index: string]: any},
+	body: string,
+	path: string
+};
