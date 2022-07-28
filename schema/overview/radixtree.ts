@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-type RoseTree<A, B> =
+type RadixTree<A, B> =
     | { kind: "Leaf"; key: A; value: B }
-    | { kind: "Node"; key: A; value: B; children: RoseTree<A, B>[] };
+    | { kind: "Node"; key: A; value: B; children: RadixTree<A, B>[] };
 
 /*
  * Some notes and definitions:
@@ -21,7 +21,7 @@ type RoseTree<A, B> =
  *
  */
 
-const findInTree = <A, B>(key: A[], overview: RoseTree<A, B>): B => {
+const findInTree = <A, B>(key: A[], overview: RadixTree<A, B>): B => {
 	if (key.length === 0 || overview.kind == "Leaf") {
 		return overview.value;
 	}
@@ -44,8 +44,8 @@ const findInTree = <A, B>(key: A[], overview: RoseTree<A, B>): B => {
 const modifyTree = <A, B>(
 	key: A[],
 	value: B,
-	overview: RoseTree<A, B>
-): RoseTree<A, B> => {
+	overview: RadixTree<A, B>
+): RadixTree<A, B> => {
 	if (key.length === 0 && overview.kind === "Leaf") {
 		return { ...overview, value: value };
 	}
@@ -73,8 +73,8 @@ const modifyTree = <A, B>(
 
 const deleteInTree = <A, B>(
 	key: A[],
-	overview: RoseTree<A, B>
-): RoseTree<A, B> => {
+	overview: RadixTree<A, B>
+): RadixTree<A, B> => {
 	if (overview.kind === "Leaf") {
 		return overview;
 	}
@@ -100,7 +100,7 @@ const deleteInTree = <A, B>(
 };
 
 function buildNewChild<A, B>(key: A[], value: B) {
-	const templateNewChild: RoseTree<A, B> = {
+	const templateNewChild: RadixTree<A, B> = {
 		kind: "Leaf",
 		key: key[0],
 		value: value,
@@ -112,4 +112,4 @@ function buildNewChild<A, B>(key: A[], value: B) {
 	return newChild;
 }
 
-export { findInTree, modifyTree, deleteInTree, RoseTree };
+export { findInTree, modifyTree, deleteInTree, RadixTree };

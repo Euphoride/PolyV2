@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { ServiceConfiguration } from "./CommonTypes";
+import { GenericServiceConfiguration, ServiceConfiguration } from "./CommonTypes";
 
 export type Cookies = {
     [index: string]: string;
@@ -17,8 +17,16 @@ export type UnresolvedProviderGRO = {
     Headers: HTTPHeaders;
     Path: string[];
     Data: any;
-    ServiceConfiguration: ServiceConfiguration;
-};
+    ServiceConfiguration: ServiceConfiguration<unknown>;
+}; 
+
+export type GenericRequestOptions = {
+    Verb: HTTPMethod;
+    Headers: HTTPHeaders;
+    Path: string[];
+    Data: any;
+    ServiceConfiguration: GenericServiceConfiguration;
+}
 
 export type GeneralRequestOptions = UnresolvedProviderGRO & {
     TableObject: any; // Mongo Collection | SQL table

@@ -2,11 +2,11 @@
 import { ServerResponse } from "http";
 import { MongoClient } from "mongodb";
 import { Pool } from "pg";
-import { Nothing } from "../types/CommonTypes";
-import { SQLPoolConfiguration } from "../types/DatabaseTypes";
-import { GeneralRequestOptions, UnresolvedProviderGRO } from "../types/RequestTypes";
-import { LazyPipeline } from "./Pipelines";
-import { fetchResolver, modifyResolver, deleteResolver } from "./Resolvers";
+import { Nothing } from "../../types/CommonTypes";
+import { SQLPoolConfiguration } from "../../types/DatabaseTypes";
+import { GeneralRequestOptions, UnresolvedProviderGRO } from "../../types/RequestTypes";
+import { LazyPipeline } from "../Pipelines";
+import { fetchResolver, modifyResolver, deleteResolver } from "./DataResolvers";
 
 
 export function MongoProviderPipelineResolver(response: ServerResponse, client: MongoClient) {
@@ -78,6 +78,7 @@ export function MongoProviderPipelineResolver(response: ServerResponse, client: 
     
 	return LazyPipeline<UnresolvedProviderGRO>()
 		.andThen((res) => {
+			if (res.ServiceConfiguration.kind !== "Generic") return Nothing;
 			const resolvedDatabaseName = res.ServiceConfiguration.Database || "Main";
 
 			const tableObject = client

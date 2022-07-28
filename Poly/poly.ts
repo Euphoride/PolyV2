@@ -2,19 +2,22 @@ import { createServer, IncomingMessage, ServerResponse } from "http";
 import { Pool } from "pg";
 
 
-import RoutePipeline from "../src/RoutingPipeline";
+import RoutePipeline from "../src/generic/RoutingPipeline";
 
 import { MongoClient, MongoClientOptions, ServerApiVersion } from "mongodb";
-import { RoseTree } from "../schema/overview/rosetree";
-import { LoadedRequest } from "../types/RequestTypes";
+import { findInTree, RadixTree } from "../schema/overview/radixtree";
+import { GenericRequestOptions, HTTPHeaders, HTTPMethod, LoadedRequest } from "../types/RequestTypes";
 import { connectionConfig, SQLPoolConfiguration } from "../types/DatabaseTypes";
-import { ServiceConfiguration } from "../types/CommonTypes";
+import { Nothing, ServiceConfiguration } from "../types/CommonTypes";
+import { LazyPipeline } from "../src/Pipelines";
+import { ResolverManager } from "../src/Resolvers";
 
 export function initialisePoly() {
-	const KVRoseTree: RoseTree<string, ServiceConfiguration> = {
+	const KVRadixTree: RadixTree<string, ServiceConfiguration<unknown>> = {
 		kind: "Leaf",
 		key: "/",
 		value: {
+			kind: "Generic",
 			ServiceProvider: "Mongo",
 			Database: "PlaygroundTest",
 			Table: "TestCollection",
@@ -27,11 +30,55 @@ export function initialisePoly() {
 	};
 
 	return {
-		providers: KVRoseTree,
+		providers: KVRadixTree,
 	};
 }
 
-export function startPoly(providers: RoseTree<string, ServiceConfiguration>) {
+function RequestRouter(
+	req: LoadedRequest,
+	res: ServerResponse,
+	mongoClient: MongoClient,
+	sqlPool: SQLPoolConfiguration
+) {
+	const pipe = LazyPipeline<LoadedRequest>()
+		.andThen((req) => {
+			const method = req.method;
+
+			if (!["GET", "POST", "DELETE"].includes(method)) {
+				return Nothing;
+			}
+
+			return {
+				Verb: <HTTPMethod>method,
+				Headers: <HTTPHeaders>req.headers,
+				Data: req.body,
+				Path: req.path,
+			};
+		})
+		.andThen((res) => {
+			return { ...res, Path: res.Path.split("/") };
+		})
+		.andThen((res) => {
+			const reqManager = new ResolverManager();
+
+			const serviceConfig = findInTree(res.Path, reqManager.internalRadixTree);
+
+			return { ...res, ServiceConfiguration: serviceConfig };
+		})
+		.impureThen((resp) => {	
+			const reqManager = new ResolverManager();
+
+			if (resp.ServiceConfiguration.kind === "Generic") {		
+				RoutePipeline(<GenericRequestOptions>resp, res, mongoClient, sqlPool, reqManager.internalRadixTree);
+			} else {
+				resp.ServiceConfiguration.Resolver._resolve();
+			}
+		});
+
+	pipe.feed(req);
+}
+
+export function startPoly(providers: RadixTree<string, ServiceConfiguration<unknown>>) {
 	const MongoURI =
         "mongodb+srv://MongoUser:MongoUserHouseCat@playground.rjsvz.mongodb.net/?retryWrites=true&w=majority";
 	const options: MongoClientOptions = { serverApi: ServerApiVersion.v1 };
@@ -39,14 +86,6 @@ export function startPoly(providers: RoseTree<string, ServiceConfiguration>) {
 
 	const SQLURI = "";
 
-	const handler = (
-		req: LoadedRequest,
-		res: ServerResponse,
-		mongoClient: MongoClient,
-		sqlPool: SQLPoolConfiguration
-	) => {
-		RoutePipeline(req, res, mongoClient, sqlPool, providers);
-	};
 
 	const server = createServer(
 		async (req: IncomingMessage, res: ServerResponse) => {
@@ -64,7 +103,7 @@ export function startPoly(providers: RoseTree<string, ServiceConfiguration>) {
 
 				const lreq = buildLoadedRequest(req, incomingBody);
 
-				handler(lreq, res, mongoClient, pool);
+				RequestRouter(lreq, res, mongoClient, pool);
 			});
 		}
 	);
