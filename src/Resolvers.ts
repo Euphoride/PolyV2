@@ -1,46 +1,80 @@
 import { modifyTree, RadixTree } from "../schema/overview/radixtree";
-import { ServiceConfiguration } from "../types/CommonTypes";
+import { AuthObj } from "../types/AuthenticationTypes";
+import { Fail, ServiceConfiguration, Successful } from "../types/CommonTypes";
 import { UnresolvedProviderGRO } from "../types/RequestTypes";
+import { isIncomparable, shouldAssignNewAuth } from "./auth/compare/compare";
 
 export interface Resolver<C> {
 	parentResolver?: Resolver<unknown>;
 	seed?: unknown;
 	children: Resolver<unknown>[];
-	access: { [index: string]: string; };
+	access: AuthObj;
 }
 
 export abstract class Resolver<C> {
-	constructor(route: string, parentResolver?: Resolver<unknown>, seed?: unknown) {
-		const routeKey = route.split("/");
+	constructor(parentResolver?: Resolver<unknown>, route?: string, authentication?: AuthObj, seed?: unknown, forceAuth?: boolean) {
+		if (!route) {
+			const routeKey = route!.split("/");
+			
+			const manager = new ResolverManager();
+			manager.addToInternal(routeKey, this);
+
+			manager.cycleCheck();
+		}
 		
-		const manager = new ResolverManager();
-		manager.addToInternal(routeKey, this);
-
-
 		parentResolver?.registerChild(this);
 
-		manager.cycleCheck();
 
 		this.parentResolver = parentResolver;
 		this.seed = seed;
 		this.children = [];
 
-		this.access = this.parentResolver?.getAccessObject() || {
+		const defaultAuthObj: AuthObj = {
 			"read": "*",
-			"write": "None",
-			"Delete": "None"
+			"write": [],
+			"delete": []
 		};
+
+		authentication ||= defaultAuthObj;
+		const parentAccessObj = this.parentResolver?.getAccessObject() || defaultAuthObj;
+		
+
+		if (!shouldAssignNewAuth(authentication, parentAccessObj) && !forceAuth) {
+			console.warn(
+				"Detected that current authentication parameters are not consistent with parent authentication parameters (the current authentication scope is not enclosed in the parent scope). Defaulting to parent authentication scope. You can force this to not happen by setting forceAuth = true in your superconstructor."
+			);
+			authentication = parentAccessObj;
+		}
+
+		if (isIncomparable(authentication, parentAccessObj) && !forceAuth) {
+			console.warn(
+				"Deteced that current authentication parameters are not consistent with parent authentication parameters (the current authentication scope contains access rules that not comparible to any rules in the parent). Defaulting to parent authentication scope. You can force this to not happen by setting forceAuth = true in your superconstructor"
+			);
+			authentication = parentAccessObj;
+		}
+
+		this.access = authentication || parentAccessObj;
 	}
 
-	abstract resolve<B>(result: B): C;
+	abstract resolve(result: unknown): Promise<C & Successful | Fail>;
 
-	_resolve(): C {
-		const result = this.parentResolver?._resolve() || this.seed;
+	async _resolve(): Promise<C & Successful | Fail> {
+		const result = await this.parentResolver?._resolve();
 
-		if (!result) {
+		if (!result && !this.seed) {
 			throw new Error("Couldn't resolve upper dependency result, resolution failed.");
 		}
-		return this.resolve(result);
+
+		if (!result) {
+			return this.resolve(this.seed);
+		}
+
+		if (result.kind === "Fail") {
+			return result;
+		}
+
+		const {kind: _, ...rest} = result;
+		return this.resolve(rest);
 	}
 
 	getAccessObject() {

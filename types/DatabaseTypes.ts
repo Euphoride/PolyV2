@@ -1,6 +1,6 @@
-import { Pool, PoolConfig } from "pg";
+import { Pool } from "pg";
 
-export type connectionConfig = {
+export type ConnectionConfig = {
     user: string,
     host: string,
     database: string,
@@ -10,5 +10,5 @@ export type connectionConfig = {
 
 export type SQLPoolConfiguration = {
     pool: Pool,
-    connectionOptions?: connectionConfig; 
+    connectionOptions?: ConnectionConfig; 
 };

@@ -2,15 +2,15 @@ import { createServer, IncomingMessage, ServerResponse } from "http";
 import { Pool } from "pg";
 
 
-import RoutePipeline from "../src/generic/RoutingPipeline";
+import RoutePipeline from "../generic/RoutingPipeline";
 
 import { MongoClient, MongoClientOptions, ServerApiVersion } from "mongodb";
-import { findInTree, RadixTree } from "../schema/overview/radixtree";
-import { GenericRequestOptions, HTTPHeaders, HTTPMethod, LoadedRequest } from "../types/RequestTypes";
-import { connectionConfig, SQLPoolConfiguration } from "../types/DatabaseTypes";
-import { Nothing, ServiceConfiguration } from "../types/CommonTypes";
-import { LazyPipeline } from "../src/Pipelines";
-import { ResolverManager } from "../src/Resolvers";
+import { findInTree, RadixTree } from "../../schema/overview/radixtree";
+import { GenericRequestOptions, HTTPHeaders, HTTPMethod, LoadedRequest } from "../../types/RequestTypes";
+import { ConnectionConfig, SQLPoolConfiguration } from "../../types/DatabaseTypes";
+import { Nothing, ServiceConfiguration } from "../../types/CommonTypes";
+import { LazyPipeline } from "../Pipelines";
+import { ResolverManager } from "../Resolvers";
 
 export function initialisePoly() {
 	const KVRadixTree: RadixTree<string, ServiceConfiguration<unknown>> = {
@@ -111,7 +111,7 @@ export function startPoly(providers: RadixTree<string, ServiceConfiguration<unkn
 	server.listen(3000);
 }
 
-function getSQLPool(SQLURI: string, options?: connectionConfig): SQLPoolConfiguration {
+function getSQLPool(SQLURI: string, options?: ConnectionConfig): SQLPoolConfiguration {
 	const sqlPool = new Pool(options);
 	return {
 		pool: sqlPool,
@@ -119,9 +119,7 @@ function getSQLPool(SQLURI: string, options?: connectionConfig): SQLPoolConfigur
 	};
 }
 
-async function getSQLClient(pool: Pool) {
-	return await pool.connect();
-}
+
 
 async function getMongoClient(MongoURI: string, options: MongoClientOptions) {
 	const client = new MongoClient(MongoURI, options);
