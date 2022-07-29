@@ -10,11 +10,11 @@ export interface Resolver<C> {
 }
 
 export abstract class Resolver<C> {
-	constructor(routeKey: string, parentResolver?: Resolver<unknown>, seed?: unknown) {
-		const routeKeyArr = routeKey.split("/");
+	constructor(route: string, parentResolver?: Resolver<unknown>, seed?: unknown) {
+		const routeKey = route.split("/");
 		
 		const manager = new ResolverManager();
-		manager.addToInternal(routeKeyArr, this);
+		manager.addToInternal(routeKey, this);
 
 
 		parentResolver?.registerChild(this);
